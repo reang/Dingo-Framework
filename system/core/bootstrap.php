@@ -12,7 +12,7 @@ class bootstrap
 {
 	// contain the directories where php will look for the missing classes
 	private static $_directories = array();
-	
+
 	// Autoload
 	// This method loops through the packages array and attempts to find the classes in all the packages.
 	// @Author Nana S
@@ -20,40 +20,40 @@ class bootstrap
 	// @return void
 	// ---------------------------------------------------------------------------
 	public static function autoload($className)
-    {
-    	// Split up the classname to determine if we want to look in sub-packages
-        $arr = explode('_', $className);
+	{
+		// Split up the classname to determine if we want to look in sub-packages
+		$arr = explode('_', $className);
 
-        // The last piece of the array is the classname
+		// The last piece of the array is the classname
 		$filename = array_shift($arr);
 
-        // Build a relative path of the package + the classname to find out where to look
-        $className = implode('/', $arr).'/'.$filename.'.php';
+		// Build a relative path of the package + the classname to find out where to look
+		$className = implode('/', $arr).'/'.$filename.'.php';
 
-        // Look in all package directories for the class we need to include
-        foreach (self::$_directories as $directory)
-        {
-        	// Only files are welcome... it might as well be a sub-package!
-            if (is_file($directory.$className))
-            {
-            	// Found it! Require it only once and break out of the loop because we're done!
-                require_once $directory.$className;
-                break;
-            }
-        }
-    }
-	
+		// Look in all package directories for the class we need to include
+		foreach (self::$_directories as $directory)
+		{
+			// Only files are welcome... it might as well be a sub-package!
+			if (is_file($directory.$className))
+			{
+				// Found it! Require it only once and break out of the loop because we're done!
+				require_once $directory.$className;
+				break;
+			}
+		}
+	}
+
 	// addPackage
 	// This method adds a package directory to our package array.
 	// @Author Nana S
 	// @param string $directory The package directory
-    // @return void
+	// @return void
 	// ---------------------------------------------------------------------------
 	public static function addPackage($directory)
-    {
-    	// Create a new array entry in our static property
-        self::$_directories[] = $directory;
-    }
+	{
+		// Create a new array entry in our static property
+		self::$_directories[] = $directory;
+	}
 	
 	// Get the requested URL, parse it, then clean it up
 	// ---------------------------------------------------------------------------
