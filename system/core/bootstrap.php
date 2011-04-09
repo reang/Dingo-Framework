@@ -10,6 +10,51 @@
 
 class bootstrap
 {
+	// contain the directories where php will look for the missing classes
+	private static $_directories = array();
+	
+	// Autoload
+	// This method loops through the packages array and attempts to find the classes in all the packages.
+	// @Author Nana S
+	// @param string $className The class to be loaded
+	// @return void
+	// ---------------------------------------------------------------------------
+	public static function autoload($className)
+    {
+    	// Split up the classname to determine if we want to look in sub-packages
+        $arr = explode('_', $className);
+
+        // The last piece of the array is the classname
+		$filename = array_shift($arr);
+
+        // Build a relative path of the package + the classname to find out where to look
+        $className = implode('/', $arr).'/'.$filename.'.php';
+
+        // Look in all package directories for the class we need to include
+        foreach (self::$_directories as $directory)
+        {
+        	// Only files are welcome... it might as well be a sub-package!
+            if (is_file($directory.$className))
+            {
+            	// Found it! Require it only once and break out of the loop because we're done!
+                require_once $directory.$className;
+                break;
+            }
+        }
+    }
+	
+	// addPackage
+	// This method adds a package directory to our package array.
+	// @Author Nana S
+	// @param string $directory The package directory
+    // @return void
+	// ---------------------------------------------------------------------------
+	public static function addPackage($directory)
+    {
+    	// Create a new array entry in our static property
+        self::$_directories[] = $directory;
+    }
+	
 	// Get the requested URL, parse it, then clean it up
 	// ---------------------------------------------------------------------------
 	public static function get_request_url()
@@ -37,7 +82,7 @@ class bootstrap
 	
 	// Autoload
 	// ---------------------------------------------------------------------------
-	public static function autoload($controller)
+	public static function autoload1($controller)
 	{
 		foreach(array('library','helper') as $type)
 		{
@@ -68,17 +113,24 @@ class bootstrap
 		// Start buffer
 		ob_start();
 		
+		// Autoloading files
+		require_once(SYSTEM . '/core/core.php');
+		require_once(SYSTEM . '/core/error.php');
 		
-		// Load core files
-		require_once(SYSTEM.'/core/core.php');
-		require_once(SYSTEM.'/core/config.php');
-		require_once(SYSTEM.'/core/api.php');
-		require_once(SYSTEM.'/core/route.php');
-		require_once(SYSTEM.'/core/load.php');
-		require_once(SYSTEM.'/core/input.php');
-		require_once(SYSTEM.'/core/error.php');
+		spl_autoload_register(array('bootstrap', 'autoload'));
+		bootstrap::addPackage(SYSTEM .'/core');
+		bootstrap::addPackage(SYSTEM .'/library');
+		bootstrap::addPackage(APPLICATION .'/');
+		
+		load::library('db');
+		
 		require_once(APPLICATION.'/'.CONFIG.'/'.CONFIGURATION.'/config.php');
-		
+
+		set_error_handler('dingo_error');
+		set_exception_handler('dingo_exception');
+
+		// Load route configuration
+		require_once(APPLICATION.'/'.CONFIG.'/'.CONFIGURATION.'/route.php');
 		
 		set_error_handler('dingo_error');
 		set_exception_handler('dingo_exception');
@@ -110,19 +162,13 @@ class bootstrap
 		
 		// Load Controller
 		//----------------------------------------------------------------------------------------------
+		// Initialize controller
+		$tmp = "{$uri['controller_class']}_controller";
 		
-		// If controller does not exist, give 404 error
-		if(!file_exists(APPLICATION.'/'.config::get('folder_controllers')."/{$uri['controller']}.php"))
-		{
+		if(!class_exists($tmp)) {
 			load::error('404');
 		}
 		
-		
-		// Include controller
-		require_once(APPLICATION.'/'.config::get('folder_controllers')."/{$uri['controller']}.php");
-		
-		// Initialize controller
-		$tmp = "{$uri['controller_class']}_controller";
 		$controller = new $tmp();
 		unset($tmp);
 		
@@ -153,7 +199,7 @@ class bootstrap
 		
 		
 		// Autoload Components
-		bootstrap::autoload($controller);
+		bootstrap::autoload1($controller);
 		
 		
 		// Check to see if function exists
@@ -181,4 +227,3 @@ class bootstrap
 		ob_end_flush();
 	}
 }
-
